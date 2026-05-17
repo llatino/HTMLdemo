@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>8-BIT CALC</title>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: #1a1a2e;
+      background-image:
+        linear-gradient(rgba(0,255,0,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,0,0.03) 1px, transparent 1px);
+      background-size: 20px 20px;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'VT323', monospace;
+    }
+
+    .calc {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px;
+      background: #16213e;
+      border: 4px solid #00ff41;
+      box-shadow: 0 0 0 4px #1a1a2e, 0 0 0 8px #00ff41, 8px 8px 0 8px #003300;
+      image-rendering: pixelated;
+    }
+
+    .title {
+      text-align: center;
+      color: #00ff41;
+      font-size: 28px;
+      letter-spacing: 4px;
+      padding: 8px 0 12px;
+      text-shadow: 2px 2px 0 #003300;
+      animation: blink 1.5s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .display {
+      background: #0d0d0d;
+      border: 4px solid #00ff41;
+      padding: 16px 12px 12px;
+      margin-bottom: 16px;
+      position: relative;
+      box-shadow: inset 0 0 20px rgba(0,255,65,0.1);
+    }
+
+    .display::before {
+      content: "SCORE";
+      position: absolute;
+      top: -10px;
+      left: 8px;
+      font-size: 8px;
+      color: #00ff41;
+      background: #16213e;
+      padding: 0 4px;
+    }
+
+    .display .expr {
+      font-size: 26px;
+      color: #005500;
+      min-height: 16px;
+      text-align: right;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+
+    .display .num {
+      font-size: 80px;
+      color: #00ff41;
+      text-align: right;
+      word-break: break-all;
+      text-shadow: 0 0 10px #00ff41, 2px 2px 0 #003300;
+      line-height: 1.2;
+    }
+
+    .display .num.small  { font-size: 60px; }
+    .display .num.xsmall { font-size: 48px; }
+
+    .scanline {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px
+      );
+      pointer-events: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .btn {
+      height: 64px;
+      border: 3px solid #444;
+      font-family: 'VT323', monospace;
+      font-size: 36px;
+      cursor: pointer;
+      background: #0f3460;
+      color: #ffffff;
+      position: relative;
+      transition: none;
+      box-shadow: 3px 3px 0 #000;
+      image-rendering: pixelated;
+      user-select: none;
+    }
+
+    .btn:active {
+      box-shadow: none;
+      transform: translate(3px, 3px);
+      filter: brightness(1.3);
+    }
+
+    .btn.gray {
+      background: #2d2d2d;
+      color: #aaa;
+      border-color: #555;
+      box-shadow: 3px 3px 0 #000;
+    }
+
+    .btn.op {
+      background: #4a0080;
+      color: #ff00ff;
+      border-color: #ff00ff;
+      box-shadow: 3px 3px 0 #000;
+      text-shadow: 0 0 8px #ff00ff;
+    }
+
+    .btn.op.active {
+      background: #ff00ff;
+      color: #1a1a2e;
+      text-shadow: none;
+    }
+
+    .btn.zero {
+      grid-column: span 2;
+      justify-content: flex-start;
+      padding-left: 20px;
+      text-align: left;
+    }
+
+    .pixel-label {
+      text-align: center;
+      color: #333;
+      font-size: 16px;
+      margin-top: 10px;
+      letter-spacing: 2px;
+    }
+
+    @media (max-width: 380px) {
+      .btn { height: 56px; font-size: 12px; }
+      .display .num { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+<div class="calc">
+  <div class="title">★ CALC QUEST ★</div>
+
+  <div class="display">
+    <div class="scanline"></div>
+    <div class="expr" id="expr">&nbsp;</div>
+    <div class="num" id="num">0</div>
+  </div>
+
+  <div class="grid">
+    <button class="btn gray" onclick="press('AC')">AC</button>
+    <button class="btn gray" onclick="press('+/-')">±</button>
+    <button class="btn gray" onclick="press('%')">%</button>
+    <button class="btn op"   onclick="press('÷')" id="op-÷">÷</button>
+
+    <button class="btn" onclick="press('7')">7</button>
+    <button class="btn" onclick="press('8')">8</button>
+    <button class="btn" onclick="press('9')">9</button>
+    <button class="btn op"   onclick="press('×')" id="op-×">×</button>
+
+    <button class="btn" onclick="press('4')">4</button>
+    <button class="btn" onclick="press('5')">5</button>
+    <button class="btn" onclick="press('6')">6</button>
+    <button class="btn op"   onclick="press('−')" id="op-−">−</button>
+
+    <button class="btn" onclick="press('1')">1</button>
+    <button class="btn" onclick="press('2')">2</button>
+    <button class="btn" onclick="press('3')">3</button>
+    <button class="btn op"   onclick="press('+')" id="op-+">+</button>
+
+    <button class="btn zero" onclick="press('0')">0</button>
+    <button class="btn"      onclick="press('.')">.</button>
+    <button class="btn op"   onclick="press('=')">=</button>
+  </div>
+
+  <div class="pixel-label">INSERT COIN TO CONTINUE</div>
+</div>
+
+<script>
+  let cur = '0', prev = '', op = '', justEq = false;
+  const numEl  = document.getElementById('num');
+  const exprEl = document.getElementById('expr');
+  const ops = ['÷','×','−','+'];
+
+  function setActiveOp(o) {
+    ops.forEach(x => document.getElementById('op-'+x)?.classList.remove('active'));
+    if (o && o !== '=') document.getElementById('op-'+o)?.classList.add('active');
+  }
+
+  function updateSize() {
+    numEl.className = 'num';
+    if (cur.length > 9) numEl.classList.add('xsmall');
+    else if (cur.length > 6) numEl.classList.add('small');
+  }
+
+  function render() {
+    numEl.textContent = cur;
+    updateSize();
+  }
+
+  function press(v) {
+    if (v === 'AC') {
+      cur = '0'; prev = ''; op = ''; justEq = false;
+      exprEl.innerHTML = '&nbsp;';
+      setActiveOp('');
+
+    } else if (v === '+/-') {
+      cur = cur.startsWith('-') ? cur.slice(1) : '-' + cur;
+
+    } else if (v === '%') {
+      cur = String(parseFloat(cur) / 100);
+
+    } else if (ops.includes(v)) {
+      if (op && !justEq) calculate(true);
+      prev = cur; op = v; justEq = false;
+      exprEl.textContent = cur + ' ' + v;
+      cur = '0';
+      setActiveOp(v);
+
+    } else if (v === '=') {
+      if (!op) return;
+      exprEl.textContent = prev + ' ' + op + ' ' + cur + ' =';
+      calculate(false);
+      setActiveOp('');
+
+    } else if (v === '.') {
+      if (justEq) { cur = '0'; justEq = false; }
+      if (!cur.includes('.')) cur += '.';
+
+    } else {
+      if (justEq) { cur = '0'; justEq = false; exprEl.innerHTML = '&nbsp;'; }
+      cur = (cur === '0') ? v : (cur.length < 12 ? cur + v : cur);
+      setActiveOp('');
+    }
+    render();
+  }
+
+  function calculate(chain) {
+    let a = parseFloat(prev), b = parseFloat(cur), r;
+    if      (op === '÷') r = b === 0 ? 'Error' : a / b;
+    else if (op === '×') r = a * b;
+    else if (op === '−') r = a - b;
+    else if (op === '+') r = a + b;
+
+    if (r === 'Error') { cur = 'Error'; op = ''; }
+    else {
+      r = parseFloat(r.toFixed(10));
+      cur = String(r % 1 === 0 ? Math.trunc(r) : r);
+    }
+    if (!chain) { op = ''; prev = ''; }
+    justEq = !chain;
+    render();
+  }
+
+  document.addEventListener('keydown', e => {
+    const map = {
+      '0':'0','1':'1','2':'2','3':'3','4':'4',
+      '5':'5','6':'6','7':'7','8':'8','9':'9',
+      '+':'+','-':'−','*':'×','/':'÷',
+      'Enter':'=','Escape':'AC','.':'.'
+    };
+    const v = map[e.key];
+    if (!v) return;
+    e.preventDefault();
+    press(v);
+  });
+</script>
+</body>
+</html>
