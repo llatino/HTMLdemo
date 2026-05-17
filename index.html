@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>เครื่องคิดเลข</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      min-height: 100dvh;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .calc {
+      width: 100%;
+      max-width: 480px;
+      padding: 0 12px 24px;
+    }
+
+    /* display */
+    .display {
+      text-align: right;
+      padding: 12px 8px 20px;
+    }
+    .display .expr {
+      font-size: 18px;
+      color: #888;
+      min-height: 24px;
+      word-break: break-all;
+    }
+    .display .num {
+      font-size: 72px;
+      font-weight: 300;
+      color: #fff;
+      word-break: break-all;
+      line-height: 1.1;
+    }
+    .display .num.small { font-size: 48px; }
+    .display .num.xsmall { font-size: 36px; }
+
+    /* grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    /* buttons */
+    .btn {
+      height: 80px;
+      border-radius: 50px;
+      border: none;
+      font-size: 30px;
+      font-weight: 400;
+      cursor: pointer;
+      background: #333;
+      color: #fff;
+      transition: filter 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .btn:active { filter: brightness(1.4); transform: scale(0.96); }
+
+    .btn.gray  { background: #a5a5a5; color: #000; }
+    .btn.op    { background: #ff9500; color: #fff; }
+    .btn.op.active { background: #fff; color: #ff9500; }
+    .btn.zero  { grid-column: span 2; justify-content: flex-start; padding-left: 28px; }
+
+    @media (max-width: 360px) {
+      .btn { height: 70px; font-size: 26px; }
+      .display .num { font-size: 60px; }
+    }
+  </style>
+</head>
+<body>
+<div class="calc">
+  <div class="display">
+    <div class="expr" id="expr"></div>
+    <div class="num" id="num">0</div>
+  </div>
+  <div class="grid">
+    <button class="btn gray" onclick="press('AC')">AC</button>
+    <button class="btn gray" onclick="press('+/-')">+/-</button>
+    <button class="btn gray" onclick="press('%')">%</button>
+    <button class="btn op"   onclick="press('÷')" id="op-÷">÷</button>
+
+    <button class="btn" onclick="press('7')">7</button>
+    <button class="btn" onclick="press('8')">8</button>
+    <button class="btn" onclick="press('9')">9</button>
+    <button class="btn op"   onclick="press('×')" id="op-×">×</button>
+
+    <button class="btn" onclick="press('4')">4</button>
+    <button class="btn" onclick="press('5')">5</button>
+    <button class="btn" onclick="press('6')">6</button>
+    <button class="btn op"   onclick="press('−')" id="op-−">−</button>
+
+    <button class="btn" onclick="press('1')">1</button>
+    <button class="btn" onclick="press('2')">2</button>
+    <button class="btn" onclick="press('3')">3</button>
+    <button class="btn op"   onclick="press('+')" id="op-+">+</button>
+
+    <button class="btn zero" onclick="press('0')">0</button>
+    <button class="btn"      onclick="press('.')">.</button>
+    <button class="btn op"   onclick="press('=')">＝</button>
+  </div>
+</div>
+
+<script>
+  let cur = '0', prev = '', op = '', justEq = false;
+  const numEl = document.getElementById('num');
+  const exprEl = document.getElementById('expr');
+  const ops = ['÷','×','−','+'];
+
+  function setActiveOp(o) {
+    ops.forEach(x => document.getElementById('op-'+x)?.classList.remove('active'));
+    if (o && o !== '=') document.getElementById('op-'+o)?.classList.add('active');
+  }
+
+  function updateSize() {
+    numEl.className = 'num';
+    if (cur.length > 9) numEl.classList.add('xsmall');
+    else if (cur.length > 6) numEl.classList.add('small');
+  }
+
+  function render() {
+    numEl.textContent = cur;
+    updateSize();
+  }
+
+  function press(v) {
+    if (v === 'AC') {
+      cur = '0'; prev = ''; op = ''; justEq = false;
+      exprEl.textContent = '';
+      setActiveOp('');
+
+    } else if (v === '+/-') {
+      cur = cur.startsWith('-') ? cur.slice(1) : '-' + cur;
+
+    } else if (v === '%') {
+      cur = String(parseFloat(cur) / 100);
+
+    } else if (ops.includes(v)) {
+      if (op && !justEq) calculate(true);
+      prev = cur; op = v; justEq = false;
+      exprEl.textContent = cur + ' ' + v;
+      cur = '0';
+      setActiveOp(v);
+
+    } else if (v === '=') {
+      if (!op) return;
+      exprEl.textContent = prev + ' ' + op + ' ' + cur + ' =';
+      calculate(false);
+      setActiveOp('');
+
+    } else if (v === '.') {
+      if (justEq) { cur = '0'; justEq = false; }
+      if (!cur.includes('.')) cur += '.';
+
+    } else {
+      if (justEq) { cur = '0'; justEq = false; exprEl.textContent = ''; }
+      cur = (cur === '0') ? v : (cur.length < 12 ? cur + v : cur);
+      setActiveOp('');
+    }
+    render();
+  }
+
+  function calculate(chain) {
+    let a = parseFloat(prev), b = parseFloat(cur), r;
+    if      (op === '÷') r = b === 0 ? 'Error' : a / b;
+    else if (op === '×') r = a * b;
+    else if (op === '−') r = a - b;
+    else if (op === '+') r = a + b;
+
+    if (r === 'Error') { cur = 'Error'; op = ''; }
+    else {
+      r = parseFloat(r.toFixed(10));
+      cur = String(r % 1 === 0 ? Math.trunc(r) : r);
+    }
+    if (!chain) { op = ''; prev = ''; }
+    justEq = !chain;
+    render();
+  }
+
+  document.addEventListener('keydown', e => {
+    const map = {'0':'0','1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9',
+                 '+':'+','-':'−','*':'×','/':'÷','Enter':'=','Escape':'AC','Backspace':'back','.':"."};
+    const v = map[e.key];
+    if (!v) return;
+    e.preventDefault();
+    if (v === 'back') { cur = cur.length > 1 ? cur.slice(0,-1) : '0'; render(); }
+    else press(v);
+  });
+</script>
+</body>
+</html>
